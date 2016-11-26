@@ -46,7 +46,7 @@ Some requirements and additions to the extended Aralia format:
 9. Parentheses are optional for logical operators except for ATLEAST.
 """
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import os
 import re
@@ -54,7 +54,8 @@ import sys
 
 import argparse as ap
 
-from fault_tree import Event, BasicEvent, HouseEvent, Gate, FaultTree
+from translators.fault_tree import Event, BasicEvent, HouseEvent, Gate, \
+    FaultTree
 
 
 class ParsingError(Exception):

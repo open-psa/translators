@@ -15,6 +15,8 @@
 
 """Tests for the Aralia-to-XML converter."""
 
+from __future__ import absolute_import
+
 import os
 from tempfile import NamedTemporaryFile
 from unittest import TestCase
@@ -35,7 +37,7 @@ def parse_input_file(name, multi_top=False):
 
 def test_correct():
     """Tests the valid overall process."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("ValidFaultTree\n\n")
     tmp.write("root := g1 | g2 | g3 | g4 | g7 | e1\n")
     tmp.write("g1 := e2 & g3 & g5\n")
@@ -58,7 +60,7 @@ def test_correct():
     yield assert_equal, 3, len(fault_tree.basic_events)
     yield assert_equal, 2, len(fault_tree.house_events)
     yield assert_equal, 1, len(fault_tree.undefined_events())
-    out = NamedTemporaryFile()
+    out = NamedTemporaryFile(mode="w+")
     out.write("<?xml version=\"1.0\"?>\n")
     out.write(fault_tree.to_xml())
     out.flush()
@@ -71,7 +73,7 @@ def test_correct():
 
 def test_ft_name_redefinition():
     """Tests the redefinition of the fault tree name."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FaultTreeName\n")
     tmp.write("AnotherFaultTree\n")
     tmp.write("g1 := e1\n")
@@ -81,27 +83,27 @@ def test_ft_name_redefinition():
 
 def test_ncname_ft():
     """The name of the fault tree must conform to NCNAME format."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Contains Whitespace Characters\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Peri.od\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("EndWithDash-\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Double--Dash\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("42StartWithNumbers\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Correct-Name_42\n")
     tmp.write("g1 := e1 & e2\n")  # dummy gate
     tmp.flush()
@@ -110,7 +112,7 @@ def test_ncname_ft():
 
 def test_no_ft_name():
     """Tests the case where no fault tree name is provided."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := h1 & e1\n")
     tmp.flush()
@@ -119,22 +121,22 @@ def test_no_ft_name():
 
 def test_illegal_format():
     """Test Arithmetic operators."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 + e1\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 * e1\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := -e1\n")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 / e1\n")
     tmp.flush()
@@ -143,7 +145,7 @@ def test_illegal_format():
 
 def test_repeated_argument():
     """Tests the formula with a repeated argument."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := E1 & e1\n")  # repeated argument with uppercase
@@ -153,12 +155,12 @@ def test_repeated_argument():
 
 def test_missing_parenthesis():
     """Tests cases with a missing opening or closing parentheses."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("WrongParentheses\n")
     tmp.write("g1 := a | b)")
     tmp.flush()
     yield assert_raises, ParsingError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("WrongParentheses\n")
     tmp.write("g1 := (a | b")
     tmp.flush()
@@ -167,7 +169,7 @@ def test_missing_parenthesis():
 
 def test_nested_parentheses():
     """Tests cases with nested parentheses."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("WrongParentheses\n")
     tmp.write("g1 := ((a | b))")
     tmp.flush()
@@ -176,12 +178,12 @@ def test_nested_parentheses():
 
 def test_vote_gate_arguments():
     """K/N or Combination gate/operator should have its K < its N."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := @(3, [a, b, c])")  # K = N
     tmp.flush()
     yield assert_raises, FaultTreeError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := @(4, [a, b, c])")  # K > N
     tmp.flush()
@@ -190,7 +192,7 @@ def test_vote_gate_arguments():
 
 def test_null_gate():
     """Tests if NULL type gates are recognized correctly."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := a")
     tmp.flush()
@@ -204,7 +206,7 @@ def test_null_gate():
 
 def test_not_gate():
     """Tests if NOT type gates are recognized correctly."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := ~(a)")
     tmp.flush()
@@ -221,7 +223,7 @@ def test_no_top_event():
 
     Note that this also means that there is a cycle that includes the root.
     """
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := g1 & e1\n")
@@ -231,7 +233,7 @@ def test_no_top_event():
 
 def test_multi_top():
     """Multiple root events without the flag causes a problem by default."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := e2 & e1\n")
     tmp.write("g2 := h1 & e1\n")
@@ -242,7 +244,7 @@ def test_multi_top():
 
 def test_redefinition():
     """Tests name collision detection of events."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := h1 & e1\n")
@@ -253,7 +255,7 @@ def test_redefinition():
 
 def test_orphan_events():
     """Tests cases with orphan house and basic event events."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := h1 & e1\n")
@@ -271,14 +273,14 @@ def test_orphan_events():
 
 def test_cycle_detection():
     """Tests cycles in the fault tree."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := g3 & e1\n")
     tmp.write("g3 := g2 & e1\n")  # cycle
     tmp.flush()
     yield assert_raises, FaultTreeError, parse_input_file, tmp.name
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := u1 & g2 & e1\n")
     tmp.write("g2 := u2 & g3 & e1\n")  # nested formula cycle
@@ -289,7 +291,7 @@ def test_cycle_detection():
 
 def test_detached_gates():
     """Some cycles may get detached from the original fault tree."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := e2 & e1\n")
     tmp.write("g2 := g3 & e1\n")  # detached gate
@@ -303,7 +305,7 @@ class ComplementArgTestCase(TestCase):
 
     def setUp(self):
         """Launches a temporary file."""
-        self.tmp = NamedTemporaryFile()
+        self.tmp = NamedTemporaryFile(mode="w+")
         self.tmp.write("FT\n")
 
     def check_gate(self, symbol, operator, custom_gate=None):
@@ -359,7 +361,7 @@ class NestedFormulaTestCase(TestCase):
 
     def setUp(self):
         """Launches a temporary file."""
-        self.tmp = NamedTemporaryFile()
+        self.tmp = NamedTemporaryFile(mode="w+")
         self.tmp.write("FT\n")
 
     def test_or_xor(self):
@@ -405,7 +407,7 @@ class NestedFormulaTestCase(TestCase):
         self.tmp.write("g1 := ~~e1\n")
         self.tmp.flush()
         assert_raises(ParsingError, parse_input_file, self.tmp.name)
-        tmp = NamedTemporaryFile()
+        tmp = NamedTemporaryFile(mode="w+")
         tmp.write("FT\n")
         tmp.write("g1 := ~e1~a\n")
         tmp.flush()
@@ -414,7 +416,7 @@ class NestedFormulaTestCase(TestCase):
 
 def test_main():
     """Tests the main function."""
-    tmp = NamedTemporaryFile()
+    tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := g3 & e1\n")
