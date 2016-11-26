@@ -30,7 +30,7 @@ Probability of a basic event:      p(event_name) = probability
 Boolean state of a house event:    s(event_name) = state
 
 Some requirements and additions to the extended Aralia format:
-1. The names and references are not case-sensitive
+1. The names and references are case-insensitive ASCII only
    and must be formatted according to 'XML NCNAME datatype'
    without double dashes('--'), period('.'), and trailing '-'.
 2. Arguments can be complemented with '~'.
@@ -224,7 +224,7 @@ class LateBindingFaultTree(FaultTree):
         """
         self.__check_redefinition(name)
         event = BasicEvent(name, prob)
-        self.__basic_events.update({name.lower(): event})
+        self.__basic_events[name.lower()] = event
         self.basic_events.append(event)
 
     def add_house_event(self, name, state):
@@ -239,7 +239,7 @@ class LateBindingFaultTree(FaultTree):
         """
         self.__check_redefinition(name)
         event = HouseEvent(name, state)
-        self.__house_events.update({name.lower(): event})
+        self.__house_events[name.lower()] = event
         self.house_events.append(event)
 
     def add_gate(self, name, operator, arguments, k_num=None):
@@ -257,7 +257,7 @@ class LateBindingFaultTree(FaultTree):
         self.__check_redefinition(name)
         gate = LateBindingGate(name, operator, k_num)
         gate.event_arguments = arguments
-        self.__gates.update({name.lower(): gate})
+        self.__gates[name.lower()] = gate
         self.gates.append(gate)
 
     def populate(self):
