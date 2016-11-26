@@ -82,10 +82,6 @@ class BasicEvent(Event):
                 "<float value=\"" + str(self.prob) + "\"/>\n"
                 "</define-basic-event>\n")
 
-    def to_aralia(self):
-        """Produces the Aralia definition of the basic event."""
-        return "p(" + self.name + ") = " + str(self.prob) + "\n"
-
 
 class HouseEvent(Event):
     """Representation of a house event in a fault tree.
@@ -109,10 +105,6 @@ class HouseEvent(Event):
         return ("<define-house-event name=\"" + self.name + "\">\n"
                 "<constant value=\"" + self.state + "\"/>\n"
                 "</define-house-event>\n")
-
-    def to_aralia(self):
-        """Produces the Aralia definition of the house event."""
-        return "s(" + self.name + ") = " + str(self.state) + "\n"
 
 
 class Gate(Event):  # pylint: disable=too-many-instance-attributes
@@ -178,21 +170,6 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
             assert isinstance(argument, Event)
             self.u_arguments.add(argument)
 
-    def get_ancestors(self):
-        """Collects ancestors from this gate.
-
-        Returns:
-            A set of ancestors.
-        """
-        ancestors = set([self])
-        parents = deque(self.parents)  # to avoid recursion
-        while parents:
-            parent = parents.popleft()
-            if parent not in ancestors:
-                ancestors.add(parent)
-                parents.extend(parent.parents)
-        return ancestors
-
     def to_xml(self, nest=0):
         """Produces the Open-PSA MEF XML definition of the gate.
 
@@ -240,43 +217,6 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
         mef_xml += convert_formula(self, nest)
         mef_xml += "</define-gate>\n"
         return mef_xml
-
-    def to_aralia(self):
-        """Produces the Aralia definition of the gate.
-
-        The transformation to the Aralia format
-        does not support complement or undefined arguments.
-
-        Raises:
-            KeyError: The gate operator is not supported.
-        """
-        assert not self.complement_arguments
-        assert not self.u_arguments
-
-        def get_format(operator):
-            """Determins formatting for the gate operator."""
-            if operator == "atleast":
-                return "@(" + str(self.k_num) + ", [", ", ", "])"
-            return {"and": ("(", " & ", ")"),
-                    "or": ("(", " | ", ")"),
-                    "xor": ("(", " ^ ", ")"),
-                    "not": ("~(", "", ")")}[operator]
-
-        line = [self.name, " := "]
-        line_start, div, line_end = get_format(self.operator)
-        line.append(line_start)
-        args = []
-        for h_arg in self.h_arguments:
-            args.append(h_arg.name)
-
-        for b_arg in self.b_arguments:
-            args.append(b_arg.name)
-
-        for g_arg in self.g_arguments:
-            args.append(g_arg.name)
-        line.append(div.join(args))
-        line.append(line_end)
-        return "".join(line) + "\n"
 
 
 class CcfGroup(object):  # pylint: disable=too-few-public-methods
@@ -390,30 +330,6 @@ class FaultTree(object):  # pylint: disable=too-many-instance-attributes
         mef_xml += "</model-data>\n"
         mef_xml += "</opsa-mef>\n"
         return mef_xml
-
-    def to_aralia(self):
-        """Produces the Aralia definition of the fault tree.
-
-        Note that the Aralia format does not support advanced features.
-        The fault tree must be valid and well formed for printing.
-
-        Returns:
-            A text snippet representing the fault tree.
-
-        Raises:
-            KeyError: Some gate operator is not supported.
-        """
-        out_txt = self.name + "\n\n"
-        sorted_gates = toposort_gates([self.top_gate], self.gates)
-        for gate in sorted_gates:
-            out_txt += gate.to_aralia()
-        out_txt += "\n"
-        for basic_event in self.basic_events:
-            out_txt += basic_event.to_aralia()
-        out_txt += "\n"
-        for house_event in self.house_events:
-            out_txt += house_event.to_aralia()
-        return out_txt
 
 
 def toposort_gates(root_gates, gates):

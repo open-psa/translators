@@ -54,8 +54,7 @@ import sys
 
 import argparse as ap
 
-from translators.fault_tree import Event, BasicEvent, HouseEvent, Gate, \
-    FaultTree
+from fault_tree import Event, BasicEvent, HouseEvent, Gate, FaultTree
 
 
 class ParsingError(Exception):
