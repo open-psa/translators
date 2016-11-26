@@ -483,7 +483,7 @@ def main(argv=None):
         FormatError: Formatting issues in the input.
         FaultTreeError: The input fault tree is malformed.
     """
-    description = "Aralia => OpenPSA MEF XML Converter"
+    description = "Aralia => Open-PSA MEF XML Converter"
     parser = ap.ArgumentParser(description=description)
     parser.add_argument("input_file", type=str,
                         help="input file with the Aralia notation")

@@ -77,7 +77,7 @@ class BasicEvent(Event):
         self.prob = prob
 
     def to_xml(self):
-        """Produces OpenPSA MEF XML definition of the basic event."""
+        """Produces the Open-PSA MEF XML definition of the basic event."""
         return ("<define-basic-event name=\"" + self.name + "\">\n"
                 "<float value=\"" + str(self.prob) + "\"/>\n"
                 "</define-basic-event>\n")
@@ -105,7 +105,7 @@ class HouseEvent(Event):
         self.state = state
 
     def to_xml(self):
-        """Produces OpenPSA MEF XML definition of the house event."""
+        """Produces the Open-PSA MEF XML definition of the house event."""
         return ("<define-house-event name=\"" + self.name + "\">\n"
                 "<constant value=\"" + self.state + "\"/>\n"
                 "</define-house-event>\n")
@@ -194,7 +194,7 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
         return ancestors
 
     def to_xml(self, nest=0):
-        """Produces OpenPSA MEF XML definition of the gate.
+        """Produces the Open-PSA MEF XML definition of the gate.
 
         Args:
             nest: The level for nesting formulas of argument gates.
@@ -303,7 +303,7 @@ class CcfGroup(object):  # pylint: disable=too-few-public-methods
         self.factors = []
 
     def to_xml(self):
-        """Produces OpenPSA MEF XML definition of the CCF group."""
+        """Produces the Open-PSA MEF XML definition of the CCF group."""
         mef_xml = ("<define-CCF-group name=\"" + self.name + "\""
                    " model=\"" + self.model + "\">\n<members>\n")
         for member in self.members:
@@ -353,7 +353,7 @@ class FaultTree(object):  # pylint: disable=too-many-instance-attributes
         self.non_ccf_events = []  # must be assigned directly.
 
     def to_xml(self, nest=0):
-        """Produces OpenPSA MEF XML definition of the fault tree.
+        """Produces the Open-PSA MEF XML definition of the fault tree.
 
         The fault tree is produced breadth-first.
         The output XML representation is not formatted for human readability.
