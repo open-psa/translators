@@ -32,7 +32,7 @@ install:
 
 script:
     - if [[ $RUN_COVERAGE == true ]]; then
-        nosetests --with-coverage test/;
+        nosetests --with-coverage test/ && codecov;
       else
         nosetests test/;
       fi
