@@ -23,7 +23,8 @@ from lxml import etree
 from nose.tools import assert_raises, assert_is_not_none, assert_equal, \
     assert_true
 
-from aralia import ParsingError, FormatError, FaultTreeError, parse_input, main
+from translators.aralia import ParsingError, FormatError, FaultTreeError, \
+    parse_input, main
 
 
 def parse_input_file(name, multi_top=False):

@@ -64,7 +64,7 @@ class ParsingError(Exception):
 
 
 class FormatError(Exception):
-    """Common errors in writing the shorthand format."""
+    """Common errors in writing the Aralia format."""
 
     pass
 
