@@ -219,50 +219,6 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
         return mef_xml
 
 
-class CcfGroup(object):  # pylint: disable=too-few-public-methods
-    """Representation of CCF groups in a fault tree.
-
-    Attributes:
-        name: The name of an instance CCF group.
-        members: A collection of members in a CCF group.
-        prob: Probability for a CCF group.
-        model: The CCF model chosen for a group.
-        factors: The factors of the CCF model.
-    """
-
-    def __init__(self, name):
-        """Constructs a unique CCF group with a unique name.
-
-        Args:
-            name: Identifier for the group.
-        """
-        self.name = name
-        self.members = []
-        self.prob = None
-        self.model = None
-        self.factors = []
-
-    def to_xml(self):
-        """Produces the Open-PSA MEF XML definition of the CCF group."""
-        mef_xml = ("<define-CCF-group name=\"" + self.name + "\""
-                   " model=\"" + self.model + "\">\n<members>\n")
-        for member in self.members:
-            mef_xml += "<basic-event name=\"" + member.name + "\"/>\n"
-        mef_xml += ("</members>\n<distribution>\n<float value=\"" +
-                    str(self.prob) + "\"/>\n</distribution>\n")
-        mef_xml += "<factors>\n"
-        assert self.model == "MGL"
-        assert self.factors
-        level = 2
-        for factor in self.factors:
-            mef_xml += ("<factor level=\"" + str(level) + "\">\n"
-                        "<float value=\"" + str(factor) + "\"/>\n</factor>\n")
-            level += 1
-
-        mef_xml += "</factors>\n</define-CCF-group>\n"
-        return mef_xml
-
-
 class FaultTree(object):  # pylint: disable=too-many-instance-attributes
     """Representation of a fault tree for general purposes.
 
@@ -273,8 +229,6 @@ class FaultTree(object):  # pylint: disable=too-many-instance-attributes
         gates: A set of all gates that are created for the fault tree.
         basic_events: A list of all basic events created for the fault tree.
         house_events: A list of all house events created for the fault tree.
-        ccf_groups: A collection of created CCF groups.
-        non_ccf_events: A list of basic events that are not in CCF groups.
     """
 
     def __init__(self, name=None):
@@ -289,8 +243,6 @@ class FaultTree(object):  # pylint: disable=too-many-instance-attributes
         self.gates = []
         self.basic_events = []
         self.house_events = []
-        self.ccf_groups = []
-        self.non_ccf_events = []  # must be assigned directly.
 
     def to_xml(self, nest=0):
         """Produces the Open-PSA MEF XML definition of the fault tree.
@@ -313,17 +265,11 @@ class FaultTree(object):  # pylint: disable=too-many-instance-attributes
         for gate in sorted_gates:
             mef_xml += gate.to_xml(nest)
 
-        for ccf_group in self.ccf_groups:
-            mef_xml += ccf_group.to_xml()
         mef_xml += "</define-fault-tree>\n"
 
         mef_xml += "<model-data>\n"
-        if self.ccf_groups:
-            for basic_event in self.non_ccf_events:
-                mef_xml += basic_event.to_xml()
-        else:
-            for basic_event in self.basic_events:
-                mef_xml += basic_event.to_xml()
+        for basic_event in self.basic_events:
+            mef_xml += basic_event.to_xml()
 
         for house_event in self.house_events:
             mef_xml += house_event.to_xml()
