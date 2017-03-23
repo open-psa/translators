@@ -147,9 +147,21 @@ def test_repeated_argument():
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 & e1\n")
-    tmp.write("g2 := E1 & e1\n")  # repeated argument with uppercase
+    tmp.write("g2 := e1 & e1\n")
     tmp.flush()
     assert_raises(FaultTreeError, parse_input_file, tmp.name)
+
+
+def test_case_sensitive():
+    """Tests the formula with a case-sensitive argument."""
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    tmp.write("g1 := g2 & G2\n")  # considered repeated arg w/o case-sensitive.
+    tmp.write("g2 := E1 & e1\n")
+    tmp.write("G2 := E1 & e1\n")  # considered repeated def w/o case-sensitive.
+    tmp.flush()
+    fault_tree = parse_input_file(tmp.name)
+    assert_is_not_none(fault_tree)
 
 
 def test_missing_parenthesis():

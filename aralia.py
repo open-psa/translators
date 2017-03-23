@@ -30,7 +30,7 @@ Probability of a basic event:      p(event_name) = probability
 Boolean state of a house event:    s(event_name) = state
 
 Some requirements and additions to the extended Aralia format:
-1. The names and references are case-insensitive ASCII only
+1. The names and references are case-sensitive ASCII only
    and must be formatted according to 'XML NCNAME datatype'
    without double dashes('--'), period('.'), and trailing '-'.
 2. Arguments can be complemented with '~'.
@@ -128,9 +128,9 @@ class LateBindingFaultTree(FaultTree):
         Raises:
             FaultTreeError: The given name already exists.
         """
-        if (name.lower() in self.__basic_events or
-                name.lower() in self.__gates or
-                name.lower() in self.__house_events):
+        if (name in self.__basic_events or
+                name in self.__gates or
+                name in self.__house_events):
             raise FaultTreeError("Redefinition of an event: " + name)
 
     def __visit(self, gate):
@@ -224,7 +224,7 @@ class LateBindingFaultTree(FaultTree):
         """
         self.__check_redefinition(name)
         event = BasicEvent(name, prob)
-        self.__basic_events[name.lower()] = event
+        self.__basic_events[name] = event
         self.basic_events.append(event)
 
     def add_house_event(self, name, state):
@@ -239,7 +239,7 @@ class LateBindingFaultTree(FaultTree):
         """
         self.__check_redefinition(name)
         event = HouseEvent(name, state)
-        self.__house_events[name.lower()] = event
+        self.__house_events[name] = event
         self.house_events.append(event)
 
     def add_gate(self, name, operator, arguments, k_num=None):
@@ -257,7 +257,7 @@ class LateBindingFaultTree(FaultTree):
         self.__check_redefinition(name)
         gate = LateBindingGate(name, operator, k_num)
         gate.event_arguments = arguments
-        self.__gates[name.lower()] = gate
+        self.__gates[name] = gate
         self.gates.append(gate)
 
     def populate(self):
@@ -270,7 +270,7 @@ class LateBindingFaultTree(FaultTree):
             assert gate.num_arguments() > 0
             for event_arg in gate.event_arguments:
                 complement = event_arg.startswith("~")
-                event_name = event_arg.lstrip("~").lower()
+                event_name = event_arg.lstrip("~")
                 if event_name in self.__gates:
                     gate.add_argument(self.__gates[event_name], complement)
                 elif event_name in self.__basic_events:
@@ -342,7 +342,7 @@ def get_arguments(arguments_string, splitter):
     """
     arguments = arguments_string.strip().split(splitter)
     arguments = [x.strip() for x in arguments]
-    if len(arguments) > len(set([x.lower() for x in arguments])):
+    if len(arguments) > len(set(arguments)):
         raise FaultTreeError("Repeated arguments:\n" + arguments_string)
     return arguments
 
