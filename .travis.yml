@@ -19,8 +19,8 @@ matrix:
 addons:
     apt:
         packages:
-            - libxml2
-            - libxslt
+            - libxml2-dev
+            - libxslt1-dev
 
 install:
     - if [[ "${TRAVIS_PYTHON_VERSION}" == "2.7" ]]; then
