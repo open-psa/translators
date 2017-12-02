@@ -30,11 +30,12 @@ install:
       if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
         brew install libxml2 libxslt;
       fi &&
-      pip install nose lxml
+      pip install nose lxml yapf
 
 script:
     - if [[ $RUN_COVERAGE == true ]]; then
         nosetests --with-coverage test/ && codecov;
+        yapf -d *.py test/*.py;
       else
         nosetests test/;
       fi

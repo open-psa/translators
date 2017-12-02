@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2014-2016 Olzhas Rakhimov
+# Copyright (C) 2014-2017 Olzhas Rakhimov
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Converts the Aralia notation for fault trees into the Open-PSA MEF.
 
 The default output file name is the input file name with the XML extension.
@@ -128,8 +127,7 @@ class LateBindingFaultTree(FaultTree):
         Raises:
             FaultTreeError: The given name already exists.
         """
-        if (name in self.__basic_events or
-                name in self.__gates or
+        if (name in self.__basic_events or name in self.__gates or
                 name in self.__house_events):
             raise FaultTreeError("Redefinition of an event: " + name)
 
@@ -170,8 +168,8 @@ class LateBindingFaultTree(FaultTree):
         """
         start = cycle[0]
         cycle.reverse()  # print top-down
-        raise FaultTreeError("Detected a cycle: " +
-                             "->".join(cycle[cycle.index(start):]))
+        raise FaultTreeError(
+            "Detected a cycle: " + "->".join(cycle[cycle.index(start):]))
 
     def __detect_cycle(self):
         """Checks if the fault tree has a cycle.
@@ -307,11 +305,11 @@ _NAME_SIG = r"[a-zA-Z]\w*(-\w+)*"
 _LITERAL = r"~?" + _NAME_SIG
 _RE_FT_NAME = re.compile(r"^(" + _NAME_SIG + r")$")  # Fault tree name
 # Probability description for a basic event
-_RE_PROB = re.compile(r"^p\(\s*(?P<name>" + _NAME_SIG +
-                      r")\s*\)\s*=\s*(?P<prob>1|0|0\.\d+)$")
+_RE_PROB = re.compile(
+    r"^p\(\s*(?P<name>" + _NAME_SIG + r")\s*\)\s*=\s*(?P<prob>1|0|0\.\d+)$")
 # State description for a house event
-_RE_STATE = re.compile(r"^s\(\s*(?P<name>" + _NAME_SIG +
-                       r")\s*\)\s*=\s*(?P<state>true|false)$")
+_RE_STATE = re.compile(
+    r"^s\(\s*(?P<name>" + _NAME_SIG + r")\s*\)\s*=\s*(?P<state>true|false)$")
 # General gate name and pattern
 _GATE_SIG = r"^(?P<name>" + _NAME_SIG + r")\s*:=\s*"
 _RE_GATE = re.compile(_GATE_SIG + r"(?P<formula>.+)$")
@@ -485,12 +483,12 @@ def main(argv=None):
     """
     description = "Aralia => Open-PSA MEF XML Converter"
     parser = ap.ArgumentParser(description=description)
-    parser.add_argument("input_file", type=str,
-                        help="input file with the Aralia notation")
-    parser.add_argument("--multi-top", help="multiple top events",
-                        action="store_true")
-    parser.add_argument("-o", "--out",
-                        help="output file to write the converted input")
+    parser.add_argument(
+        "input_file", type=str, help="input file with the Aralia notation")
+    parser.add_argument(
+        "--multi-top", help="multiple top events", action="store_true")
+    parser.add_argument(
+        "-o", "--out", help="output file to write the converted input")
     args = parser.parse_args(argv)
 
     fault_tree = None
@@ -505,6 +503,7 @@ def main(argv=None):
     with open(out, "w") as tree_file:
         tree_file.write("<?xml version=\"1.0\"?>\n")
         tree_file.write(fault_tree.to_xml())
+
 
 if __name__ == "__main__":
     try:

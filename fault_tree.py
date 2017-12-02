@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2016 Olzhas Rakhimov
+# Copyright (C) 2014-2017 Olzhas Rakhimov
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,7 +12,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """Fault tree classes and common facilities."""
 
 from collections import deque
@@ -176,6 +175,7 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
         Args:
             nest: The level for nesting formulas of argument gates.
         """
+
         def args_to_xml(type_str, container, gate, converter=None):
             """Produces XML string representation of arguments."""
             mef_xml = ""
