@@ -9,11 +9,6 @@ python:
 
 os: linux
 
-matrix:
-    include:
-        - os: osx
-          language: generic
-
 addons:
     apt:
         packages:
@@ -23,12 +18,9 @@ addons:
 install:
     - if [[ "${TRAVIS_PYTHON_VERSION}" == "2.7" ]]; then
         export RUN_COVERAGE=true;
-        pip install coverage codecov;
-      fi &&
-      if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
-        brew install libxml2 libxslt;
-      fi &&
-      pip install nose lxml yapf
+        pip install coverage codecov yapf;
+      fi
+    - pip install nose lxml
 
 script:
     - if [[ $RUN_COVERAGE == true ]]; then
