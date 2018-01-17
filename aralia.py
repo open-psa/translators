@@ -304,29 +304,28 @@ class LateBindingFaultTree(FaultTree):
 
 # Pattern for names and references
 _NAME_SIG = r"[a-zA-Z]\w*(-\w+)*"
-_LITERAL = r"~?" + _NAME_SIG
-_RE_FT_NAME = re.compile(r"^(" + _NAME_SIG + r")$")  # Fault tree name
+_LITERAL = r"~?%s" % _NAME_SIG
+_RE_FT_NAME = re.compile(r"^(%s)$" % _NAME_SIG)  # Fault tree name
 # Probability description for a basic event
 _RE_PROB = re.compile(
-    r"^p\(\s*(?P<name>" + _NAME_SIG + r")\s*\)\s*=\s*(?P<prob>1|0|0\.\d+)$")
+    r"^p\(\s*(?P<name>%s)\s*\)\s*=\s*(?P<prob>1|0|0\.\d+)$" % _NAME_SIG)
 # State description for a house event
 _RE_STATE = re.compile(
     r"^s\(\s*(?P<name>" + _NAME_SIG + r")\s*\)\s*=\s*(?P<state>true|false)$")
 # General gate name and pattern
-_GATE_SIG = r"^(?P<name>" + _NAME_SIG + r")\s*:=\s*"
-_RE_GATE = re.compile(_GATE_SIG + r"(?P<formula>.+)$")
+_RE_GATE = re.compile(r"^(?P<name>%s)\s*:=\s*(?P<formula>.+)$" % _NAME_SIG)
 # Optional parentheses for formulas
 _RE_PAREN = re.compile(r"\(([^()]+)\)$")
 # Gate type identifications
-_RE_AND = re.compile(r"(" + _LITERAL + r"(\s*&\s*" + _LITERAL + r"\s*)+)$")
-_RE_OR = re.compile(r"(" + _LITERAL + r"(\s*\|\s*" + _LITERAL + r"\s*)+)$")
-_VOTE_ARGS = r"\[(\s*" + _LITERAL + r"(\s*,\s*" + _LITERAL + r"\s*){2,})\]"
-_RE_VOTE = re.compile(r"@\(\s*([2-9])\s*,\s*" + _VOTE_ARGS + r"\s*\)\s*$")
-_RE_XOR = re.compile(r"(" + _LITERAL + r"\s*\^\s*" + _LITERAL + r")$")
-_RE_NOT = re.compile(r"~\(\s*(" + _LITERAL + r")\s*\)$")
-_RE_NULL = re.compile(r"(" + _LITERAL + r")$")
-_RE_IMPLY = re.compile(r"(" + _LITERAL + r"\s*\=>\s*" + _LITERAL + r")$")
-_RE_IFF = re.compile(r"(" + _LITERAL + r"\s*\<=>\s*" + _LITERAL + r")$")
+_RE_AND = re.compile(r"({0}(\s*&\s*{0}\s*)+)$".format(_LITERAL))
+_RE_OR = re.compile(r"({0}(\s*\|\s*{0}\s*)+)$".format(_LITERAL))
+_ARGS_LIST = r"\[(\s*{0}(\s*,\s*{0}\s*){{2,}})\]".format(_LITERAL)
+_RE_VOTE = re.compile(r"@\(\s*([2-9])\s*,\s*%s\s*\)\s*$" % _ARGS_LIST)
+_RE_XOR = re.compile(r"({0}\s*\^\s*{0})$".format(_LITERAL))
+_RE_NOT = re.compile(r"~\(\s*(%s)\s*\)$" % _LITERAL)
+_RE_NULL = re.compile(r"(%s)$" % _LITERAL)
+_RE_IMPLY = re.compile(r"({0}\s*\=>\s*{0})$".format(_LITERAL))
+_RE_IFF = re.compile(r"({0}\s*\<=>\s*{0})$".format(_LITERAL))
 
 
 def get_arguments(arguments_string, splitter):
