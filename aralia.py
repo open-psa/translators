@@ -26,6 +26,7 @@ NOT gate:                          gate_name := ~(arg)
 XOR gate:                          gate_name := (arg1 ^ arg2)
 NULL gate:                         gate_name := arg
 IMPLY gate:                        gate_name := (arg1 => arg2)
+IFF gate:                          gate_name := (arg1 <=> arg2)
 Probability of a basic event:      p(event_name) = probability
 Boolean state of a house event:    s(event_name) = state
 
@@ -325,6 +326,7 @@ _RE_XOR = re.compile(r"(" + _LITERAL + r"\s*\^\s*" + _LITERAL + r")$")
 _RE_NOT = re.compile(r"~\(\s*(" + _LITERAL + r")\s*\)$")
 _RE_NULL = re.compile(r"(" + _LITERAL + r")$")
 _RE_IMPLY = re.compile(r"(" + _LITERAL + r"\s*\=>\s*" + _LITERAL + r")$")
+_RE_IFF = re.compile(r"(" + _LITERAL + r"\s*\<=>\s*" + _LITERAL + r")$")
 
 
 def get_arguments(arguments_string, splitter):
@@ -398,6 +400,10 @@ def get_formula(line):
         arguments = _RE_IMPLY.match(line).group(1)
         arguments = get_arguments(arguments, "=>")
         operator = "imply"
+    elif _RE_IFF.match(line):
+        arguments = _RE_IFF.match(line).group(1)
+        arguments = get_arguments(arguments, "<=>")
+        operator = "iff"
     else:
         raise ParsingError("Cannot interpret the formula:\n" + line)
     return operator, arguments, k_num

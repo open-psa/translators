@@ -37,7 +37,7 @@ def test_correct():
     """Tests the valid overall process."""
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("ValidFaultTree\n\n")
-    tmp.write("root := g1 | g2 | g3 | g4 | g7 | g9 | e1\n")
+    tmp.write("root := g1 | g2 | g3 | g4 | g7 | g9 | g10 | e1\n")
     tmp.write("g1 := e2 & g3 & g5\n")
     tmp.write("g2 := h1 & g6\n")
     tmp.write("g3 := (g6 ^ e2)\n")
@@ -47,6 +47,7 @@ def test_correct():
     tmp.write("g7 := g8\n\n")
     tmp.write("g8 := ~e2 & ~e3\n\n")
     tmp.write("g9 := (g8 => g2)\n")
+    tmp.write("g10 := e1 <=> e2\n")
     tmp.write("p(e1) = 0.1\n")
     tmp.write("p(e2) = 0.2\n")
     tmp.write("p(e3) = 0.3\n")
@@ -55,7 +56,7 @@ def test_correct():
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
     assert_is_not_none(fault_tree)
-    yield assert_equal, 10, len(fault_tree.gates)
+    yield assert_equal, 11, len(fault_tree.gates)
     yield assert_equal, 3, len(fault_tree.basic_events)
     yield assert_equal, 2, len(fault_tree.house_events)
     yield assert_equal, 1, len(fault_tree.undefined_events())
@@ -241,6 +242,20 @@ def test_imply_gate():
     yield assert_equal, "g1", fault_tree.gates[0].name
     yield assert_equal, ["a", "b"], fault_tree.gates[0].event_arguments
     yield assert_equal, "imply", fault_tree.gates[0].operator
+
+
+def test_iff_gate():
+    """Tests if IFF type gates are recognized correctly."""
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    tmp.write("g1 := (a <=> b)")
+    tmp.flush()
+    fault_tree = parse_input_file(tmp.name)
+    assert_is_not_none(fault_tree)
+    yield assert_equal, 1, len(fault_tree.gates)
+    yield assert_equal, "g1", fault_tree.gates[0].name
+    yield assert_equal, ["a", "b"], fault_tree.gates[0].event_arguments
+    yield assert_equal, "iff", fault_tree.gates[0].operator
 
 
 def test_no_top_event():
@@ -451,6 +466,18 @@ class NestedFormulaTestCase(TestCase):
     def test_imply_or(self):
         """Formula with IMPLY and OR operators."""
         self.tmp.write("g1 := e1 => e2 || e3\n")
+        self.tmp.flush()
+        assert_raises(ParsingError, parse_input_file, self.tmp.name)
+
+    def test_iff_iff(self):
+        """Formula with IFF and IFF operators."""
+        self.tmp.write("g1 := e1 <=> e2 <=> e3\n")
+        self.tmp.flush()
+        assert_raises(ParsingError, parse_input_file, self.tmp.name)
+
+    def test_iff_or(self):
+        """Formula with IFF and OR operators."""
+        self.tmp.write("g1 := e1 <=> e2 || e3\n")
         self.tmp.flush()
         assert_raises(ParsingError, parse_input_file, self.tmp.name)
 
