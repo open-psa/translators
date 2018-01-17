@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2014-2017 Olzhas Rakhimov
+# Copyright (C) 2014-2018 Olzhas Rakhimov
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ ATLEAST(k/n) gate:                 gate_name := @(k, [arg1, arg2, ...])
 NOT gate:                          gate_name := ~(arg)
 XOR gate:                          gate_name := (arg1 ^ arg2)
 NULL gate:                         gate_name := arg
+IMPLY gate:                        gate_name := (arg1 => arg2)
 Probability of a basic event:      p(event_name) = probability
 Boolean state of a house event:    s(event_name) = state
 
@@ -323,6 +324,7 @@ _RE_VOTE = re.compile(r"@\(\s*([2-9])\s*,\s*" + _VOTE_ARGS + r"\s*\)\s*$")
 _RE_XOR = re.compile(r"(" + _LITERAL + r"\s*\^\s*" + _LITERAL + r")$")
 _RE_NOT = re.compile(r"~\(\s*(" + _LITERAL + r")\s*\)$")
 _RE_NULL = re.compile(r"(" + _LITERAL + r")$")
+_RE_IMPLY = re.compile(r"(" + _LITERAL + r"\s*\=>\s*" + _LITERAL + r")$")
 
 
 def get_arguments(arguments_string, splitter):
@@ -392,6 +394,10 @@ def get_formula(line):
         arguments = _RE_NULL.match(line).group(1)
         arguments = [arguments.strip()]
         operator = "null"  # pass-through
+    elif _RE_IMPLY.match(line):
+        arguments = _RE_IMPLY.match(line).group(1)
+        arguments = get_arguments(arguments, "=>")
+        operator = "imply"
     else:
         raise ParsingError("Cannot interpret the formula:\n" + line)
     return operator, arguments, k_num

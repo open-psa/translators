@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2017 Olzhas Rakhimov
+# Copyright (C) 2014-2018 Olzhas Rakhimov
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ def test_correct():
     """Tests the valid overall process."""
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("ValidFaultTree\n\n")
-    tmp.write("root := g1 | g2 | g3 | g4 | g7 | e1\n")
+    tmp.write("root := g1 | g2 | g3 | g4 | g7 | g9 | e1\n")
     tmp.write("g1 := e2 & g3 & g5\n")
     tmp.write("g2 := h1 & g6\n")
     tmp.write("g3 := (g6 ^ e2)\n")
@@ -46,6 +46,7 @@ def test_correct():
     tmp.write("g6 := (e3 | e4)\n\n")
     tmp.write("g7 := g8\n\n")
     tmp.write("g8 := ~e2 & ~e3\n\n")
+    tmp.write("g9 := (g8 => g2)\n")
     tmp.write("p(e1) = 0.1\n")
     tmp.write("p(e2) = 0.2\n")
     tmp.write("p(e3) = 0.3\n")
@@ -54,7 +55,7 @@ def test_correct():
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
     assert_is_not_none(fault_tree)
-    yield assert_equal, 9, len(fault_tree.gates)
+    yield assert_equal, 10, len(fault_tree.gates)
     yield assert_equal, 3, len(fault_tree.basic_events)
     yield assert_equal, 2, len(fault_tree.house_events)
     yield assert_equal, 1, len(fault_tree.undefined_events())
@@ -228,6 +229,20 @@ def test_not_gate():
     yield assert_equal, "not", fault_tree.gates[0].operator
 
 
+def test_imply_gate():
+    """Tests if IMPLY type gates are recognized correctly."""
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    tmp.write("g1 := (a => b)")
+    tmp.flush()
+    fault_tree = parse_input_file(tmp.name)
+    assert_is_not_none(fault_tree)
+    yield assert_equal, 1, len(fault_tree.gates)
+    yield assert_equal, "g1", fault_tree.gates[0].name
+    yield assert_equal, ["a", "b"], fault_tree.gates[0].event_arguments
+    yield assert_equal, "imply", fault_tree.gates[0].operator
+
+
 def test_no_top_event():
     """Detection of cases without top gate definitions.
 
@@ -345,6 +360,10 @@ class ComplementArgTestCase(TestCase):
         """XOR formula with complement arguments."""
         self.check_gate("^", "xor")
 
+    def test_imply(self):
+        """IMPLY formula with complement arguments."""
+        self.check_gate("=>", "imply")
+
     def test_and(self):
         """AND Formula with complement arguments."""
         self.check_gate("&", "and")
@@ -422,6 +441,18 @@ class NestedFormulaTestCase(TestCase):
         tmp.write("g1 := ~e1~a\n")
         tmp.flush()
         assert_raises(ParsingError, parse_input_file, tmp.name)
+
+    def test_imply_imply(self):
+        """Formula with IMPLY and IMPLY operators."""
+        self.tmp.write("g1 := e1 => e2 => e3\n")
+        self.tmp.flush()
+        assert_raises(ParsingError, parse_input_file, self.tmp.name)
+
+    def test_imply_or(self):
+        """Formula with IMPLY and OR operators."""
+        self.tmp.write("g1 := e1 => e2 || e3\n")
+        self.tmp.flush()
+        assert_raises(ParsingError, parse_input_file, self.tmp.name)
 
 
 def test_main():
