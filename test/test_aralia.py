@@ -21,8 +21,7 @@ from tempfile import NamedTemporaryFile
 from unittest import TestCase
 
 from lxml import etree
-from nose.tools import assert_raises, assert_is_not_none, assert_equal, \
-    assert_true
+from nose.tools import assert_raises
 
 from aralia import ParsingError, FormatError, FaultTreeError, parse_input, main
 
@@ -55,11 +54,11 @@ def test_correct():
     tmp.write("s(h2) = false\n")
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
-    assert_is_not_none(fault_tree)
-    yield assert_equal, 11, len(fault_tree.gates)
-    yield assert_equal, 3, len(fault_tree.basic_events)
-    yield assert_equal, 2, len(fault_tree.house_events)
-    yield assert_equal, 1, len(fault_tree.undefined_events())
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 11
+    assert len(fault_tree.basic_events) == 3
+    assert len(fault_tree.house_events) == 2
+    assert len(fault_tree.undefined_events()) == 1
     out = NamedTemporaryFile(mode="w+")
     out.write("<?xml version=\"1.0\"?>\n")
     out.write(fault_tree.to_xml())
@@ -68,7 +67,7 @@ def test_correct():
     relaxng = etree.RelaxNG(relaxng_doc)
     with open(out.name, "r") as test_file:
         doc = etree.parse(test_file)
-        assert_true(relaxng.validate(doc))
+        assert relaxng.validate(doc)
 
 
 def test_ft_name_redefinition():
@@ -86,28 +85,28 @@ def test_ncname_ft():
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Contains Whitespace Characters\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Peri.od\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("EndWithDash-\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Double--Dash\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("42StartWithNumbers\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("Correct-Name_42\n")
     tmp.write("g1 := e1 & e2\n")  # dummy gate
     tmp.flush()
-    yield parse_input_file, tmp.name
+    parse_input_file(tmp.name)
 
 
 def test_no_ft_name():
@@ -125,22 +124,22 @@ def test_illegal_format():
     tmp.write("FT\n")
     tmp.write("g1 := g2 + e1\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 * e1\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := -e1\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := g2 / e1\n")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
 
 
 def test_repeated_argument():
@@ -162,7 +161,7 @@ def test_case_sensitive():
     tmp.write("G2 := E1 & e1\n")  # considered repeated def w/o case-sensitive.
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
-    assert_is_not_none(fault_tree)
+    assert fault_tree is not None
 
 
 def test_missing_parenthesis():
@@ -171,12 +170,12 @@ def test_missing_parenthesis():
     tmp.write("WrongParentheses\n")
     tmp.write("g1 := a | b)")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("WrongParentheses\n")
     tmp.write("g1 := (a | b")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
 
 
 def test_nested_parentheses():
@@ -185,7 +184,7 @@ def test_nested_parentheses():
     tmp.write("WrongParentheses\n")
     tmp.write("g1 := ((a | b))")
     tmp.flush()
-    yield assert_raises, ParsingError, parse_input_file, tmp.name
+    assert_raises(ParsingError, parse_input_file, tmp.name)
 
 
 def test_vote_gate_arguments():
@@ -194,12 +193,12 @@ def test_vote_gate_arguments():
     tmp.write("FT\n")
     tmp.write("g1 := @(3, [a, b, c])")  # K = N
     tmp.flush()
-    yield assert_raises, FaultTreeError, parse_input_file, tmp.name
+    assert_raises(FaultTreeError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := @(4, [a, b, c])")  # K > N
     tmp.flush()
-    yield assert_raises, FaultTreeError, parse_input_file, tmp.name
+    assert_raises(FaultTreeError, parse_input_file, tmp.name)
 
 
 def test_null_gate():
@@ -209,11 +208,11 @@ def test_null_gate():
     tmp.write("g1 := a")
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
-    assert_is_not_none(fault_tree)
-    yield assert_equal, 1, len(fault_tree.gates)
-    yield assert_equal, "g1", fault_tree.gates[0].name
-    yield assert_true, "a" in fault_tree.gates[0].event_arguments
-    yield assert_equal, "null", fault_tree.gates[0].operator
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 1
+    assert fault_tree.gates[0].name == "g1"
+    assert "a" in fault_tree.gates[0].event_arguments
+    assert fault_tree.gates[0].operator == "null"
 
 
 def test_not_gate():
@@ -223,11 +222,11 @@ def test_not_gate():
     tmp.write("g1 := ~(a)")
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
-    assert_is_not_none(fault_tree)
-    yield assert_equal, 1, len(fault_tree.gates)
-    yield assert_equal, "g1", fault_tree.gates[0].name
-    yield assert_true, "a" in fault_tree.gates[0].event_arguments
-    yield assert_equal, "not", fault_tree.gates[0].operator
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 1
+    assert fault_tree.gates[0].name == "g1"
+    assert "a" in fault_tree.gates[0].event_arguments
+    assert fault_tree.gates[0].operator == "not"
 
 
 def test_imply_gate():
@@ -237,11 +236,11 @@ def test_imply_gate():
     tmp.write("g1 := (a => b)")
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
-    assert_is_not_none(fault_tree)
-    yield assert_equal, 1, len(fault_tree.gates)
-    yield assert_equal, "g1", fault_tree.gates[0].name
-    yield assert_equal, ["a", "b"], fault_tree.gates[0].event_arguments
-    yield assert_equal, "imply", fault_tree.gates[0].operator
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 1
+    assert fault_tree.gates[0].name == "g1"
+    assert fault_tree.gates[0].event_arguments == ["a", "b"]
+    assert fault_tree.gates[0].operator == "imply"
 
 
 def test_iff_gate():
@@ -251,11 +250,11 @@ def test_iff_gate():
     tmp.write("g1 := (a <=> b)")
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
-    assert_is_not_none(fault_tree)
-    yield assert_equal, 1, len(fault_tree.gates)
-    yield assert_equal, "g1", fault_tree.gates[0].name
-    yield assert_equal, ["a", "b"], fault_tree.gates[0].event_arguments
-    yield assert_equal, "iff", fault_tree.gates[0].operator
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 1
+    assert fault_tree.gates[0].name == "g1"
+    assert fault_tree.gates[0].event_arguments == ["a", "b"]
+    assert fault_tree.gates[0].operator == "iff"
 
 
 def test_no_top_event():
@@ -278,8 +277,8 @@ def test_multi_top():
     tmp.write("g1 := e2 & e1\n")
     tmp.write("g2 := h1 & e1\n")
     tmp.flush()
-    yield assert_raises, FaultTreeError, parse_input_file, tmp.name
-    yield assert_is_not_none, parse_input_file(tmp.name, True)  # with the flag
+    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    assert parse_input_file(tmp.name, True) is not None  # with the flag
 
 
 def test_redefinition():
@@ -302,13 +301,13 @@ def test_orphan_events():
     tmp.write("p(e1) = 0.5\n")
     tmp.write("s(h1) = false\n")
     tmp.flush()
-    yield assert_is_not_none, parse_input_file(tmp.name)
+    assert parse_input_file(tmp.name) is not None
     tmp.write("p(e2) = 0.1\n")  # orphan basic event
     tmp.flush()
-    yield assert_is_not_none, parse_input_file(tmp.name)
+    assert parse_input_file(tmp.name) is not None
     tmp.write("s(h2) = true\n")  # orphan house event
     tmp.flush()
-    yield assert_is_not_none, parse_input_file(tmp.name)
+    assert parse_input_file(tmp.name) is not None
 
 
 def test_cycle_detection():
@@ -319,14 +318,14 @@ def test_cycle_detection():
     tmp.write("g2 := g3 & e1\n")
     tmp.write("g3 := g2 & e1\n")  # cycle
     tmp.flush()
-    yield assert_raises, FaultTreeError, parse_input_file, tmp.name
+    assert_raises(FaultTreeError, parse_input_file, tmp.name)
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("g1 := u1 & g2 & e1\n")
     tmp.write("g2 := u2 & g3 & e1\n")  # nested formula cycle
     tmp.write("g3 := u3 & g2 & e1\n")  # cycle
     tmp.flush()
-    yield assert_raises, FaultTreeError, parse_input_file, tmp.name
+    assert_raises(FaultTreeError, parse_input_file, tmp.name)
 
 
 def test_detached_gates():
@@ -356,16 +355,16 @@ class ComplementArgTestCase(TestCase):
             self.tmp.write("g1 := e1 %s ~e2\n" % symbol)
         self.tmp.flush()
         fault_tree = parse_input_file(self.tmp.name)
-        assert_is_not_none(fault_tree)
-        assert_equal(1, len(fault_tree.gates))
+        assert fault_tree is not None
+        assert len(fault_tree.gates) == 1
         gate = fault_tree.gates[0]
-        assert_equal("g1", gate.name)
-        assert_equal(operator, gate.operator)
+        assert gate.name == "g1"
+        assert gate.operator == operator
         if not custom_gate:
-            assert_true("e1" in gate.event_arguments)
-        assert_true("~e2" in gate.event_arguments)
-        assert_equal(1, len(gate.complement_arguments))
-        assert_equal("e2", [x.name for x in gate.complement_arguments][0])
+            assert "e1" in gate.event_arguments
+        assert "~e2" in gate.event_arguments
+        assert len(gate.complement_arguments) == 1
+        assert [x.name for x in gate.complement_arguments][0] == "e2"
 
     def test_or(self):
         """OR formula with complement arguments."""
@@ -493,5 +492,5 @@ def test_main():
     main([tmp.name])
     out = os.path.basename(tmp.name)
     out = os.path.splitext(out)[0] + ".xml"
-    assert_true(os.path.exists(out))
+    assert os.path.exists(out)
     os.remove(out)
