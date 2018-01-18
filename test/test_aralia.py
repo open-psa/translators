@@ -18,10 +18,9 @@ from __future__ import absolute_import
 
 import os
 from tempfile import NamedTemporaryFile
-from unittest import TestCase
 
 from lxml import etree
-from nose.tools import assert_raises
+import pytest
 
 from aralia import ParsingError, FormatError, FaultTreeError, parse_input, main
 
@@ -77,33 +76,31 @@ def test_ft_name_redefinition():
     tmp.write("AnotherFaultTree\n")
     tmp.write("g1 := e1\n")
     tmp.flush()
-    assert_raises(FormatError, parse_input_file, tmp.name)
+    with pytest.raises(FormatError):
+        parse_input_file(tmp.name)
 
 
-def test_ncname_ft():
+@pytest.mark.parametrize("name", [
+    "Contains Whitespace Characters", "Peri.od", "EndWithDash-", "Double--Dash",
+    "42StartWithNumbers", "__under__", "~Not", "Not~a", "!Not", "&And", "And&"
+])
+def test_ncname_ft(name):
     """The name of the fault tree must conform to NCNAME format."""
     tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("Contains Whitespace Characters\n")
+    tmp.write("%s\n" % name)
     tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
+    with pytest.raises(ParsingError):
+        parse_input_file(tmp.name)
+
+
+@pytest.mark.parametrize("name", [
+    "Period", "With-Dash", "With_Under", "With__Dunder", "WithNumber42",
+    "Correct-Name_42"
+])
+def test_correct_ncname_ft(name):
+    """The name of the fault tree must conform to NCNAME format."""
     tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("Peri.od\n")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("EndWithDash-\n")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("Double--Dash\n")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("42StartWithNumbers\n")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("Correct-Name_42\n")
+    tmp.write("%s\n" % name)
     tmp.write("g1 := e1 & e2\n")  # dummy gate
     tmp.flush()
     parse_input_file(tmp.name)
@@ -115,31 +112,24 @@ def test_no_ft_name():
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := h1 & e1\n")
     tmp.flush()
-    assert_raises(FormatError, parse_input_file, tmp.name)
+    with pytest.raises(FormatError):
+        parse_input_file(tmp.name)
 
 
-def test_illegal_format():
+@pytest.mark.parametrize("definition", [
+    "g1 := g2 + e1", "g1 := g2 * e1", "g1 := -e1", "g1 := g2 / e1",
+    "g1 = e1 & e2", "g1 : e1 & e2", "g1 := (3 == (e1 + e2 + e3))",
+    "g1 := (1, [e1, e2, e3])", "g1 := (2, [])", "g1 := (2, [e1])",
+    "g1 := (2, [e1, e2])"
+])
+def test_illegal_format(definition):
     """Test Arithmetic operators."""
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
-    tmp.write("g1 := g2 + e1\n")
+    tmp.write("%s\n" % definition)
     tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("FT\n")
-    tmp.write("g1 := g2 * e1\n")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("FT\n")
-    tmp.write("g1 := -e1\n")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("FT\n")
-    tmp.write("g1 := g2 / e1\n")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
+    with pytest.raises(ParsingError):
+        parse_input_file(tmp.name)
 
 
 def test_repeated_argument():
@@ -149,7 +139,8 @@ def test_repeated_argument():
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := e1 & e1\n")
     tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
 
 
 def test_case_sensitive():
@@ -164,18 +155,16 @@ def test_case_sensitive():
     assert fault_tree is not None
 
 
-def test_missing_parenthesis():
+@pytest.mark.parametrize("definition",
+                         ["g1 := a | b)", "g1 := (a | b", "g1 := ((a | b)"])
+def test_missing_parenthesis(definition):
     """Tests cases with a missing opening or closing parentheses."""
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("WrongParentheses\n")
-    tmp.write("g1 := a | b)")
+    tmp.write("%s\n" % definition)
     tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("WrongParentheses\n")
-    tmp.write("g1 := (a | b")
-    tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
+    with pytest.raises(ParsingError):
+        parse_input_file(tmp.name)
 
 
 def test_nested_parentheses():
@@ -184,21 +173,24 @@ def test_nested_parentheses():
     tmp.write("WrongParentheses\n")
     tmp.write("g1 := ((a | b))")
     tmp.flush()
-    assert_raises(ParsingError, parse_input_file, tmp.name)
+    with pytest.raises(ParsingError):
+        parse_input_file(tmp.name)
 
 
-def test_vote_gate_arguments():
+@pytest.mark.parametrize(
+    "definition",
+    [
+        "g1 := @(3, [a, b, c])",  # K = N
+        "g1 := @(4, [a, b, c])"  # K > N
+    ])
+def test_vote_gate_arguments(definition):
     """K/N or Combination gate/operator should have its K < its N."""
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
-    tmp.write("g1 := @(3, [a, b, c])")  # K = N
+    tmp.write("%s\n" % definition)  # K = N
     tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("FT\n")
-    tmp.write("g1 := @(4, [a, b, c])")  # K > N
-    tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
 
 
 def test_null_gate():
@@ -267,7 +259,8 @@ def test_no_top_event():
     tmp.write("g1 := g2 & e1\n")
     tmp.write("g2 := g1 & e1\n")
     tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
 
 
 def test_multi_top():
@@ -277,7 +270,8 @@ def test_multi_top():
     tmp.write("g1 := e2 & e1\n")
     tmp.write("g2 := h1 & e1\n")
     tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
     assert parse_input_file(tmp.name, True) is not None  # with the flag
 
 
@@ -289,7 +283,8 @@ def test_redefinition():
     tmp.write("g2 := h1 & e1\n")
     tmp.write("g2 := e2 & e1\n")  # redefining an event
     tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
 
 
 def test_orphan_events():
@@ -318,14 +313,8 @@ def test_cycle_detection():
     tmp.write("g2 := g3 & e1\n")
     tmp.write("g3 := g2 & e1\n")  # cycle
     tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
-    tmp = NamedTemporaryFile(mode="w+")
-    tmp.write("FT\n")
-    tmp.write("g1 := u1 & g2 & e1\n")
-    tmp.write("g2 := u2 & g3 & e1\n")  # nested formula cycle
-    tmp.write("g3 := u3 & g2 & e1\n")  # cycle
-    tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
 
 
 def test_detached_gates():
@@ -336,149 +325,55 @@ def test_detached_gates():
     tmp.write("g2 := g3 & e1\n")  # detached gate
     tmp.write("g3 := g2 & e1\n")  # cycle
     tmp.flush()
-    assert_raises(FaultTreeError, parse_input_file, tmp.name)
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
 
 
-class ComplementArgTestCase(TestCase):
+@pytest.mark.parametrize("symbol,operator,custom_gate", [
+    ("|", "or", None),
+    ("^", "xor", None),
+    ("=>", "imply", None),
+    ("&", "and", None),
+    ("@", "atleast", "g1 := @(2, [e1, ~e2, e3])"),
+    ("", "null", "g1 := ~e2"),
+    ("", "not", "g1 := ~(~e2)"),
+    ("&", "and", "g1 := ~e2 & e2"),
+])
+def test_complement_arg(symbol, operator, custom_gate):
     """Complement arguments of gates."""
-
-    def setUp(self):
-        """Launches a temporary file."""
-        self.tmp = NamedTemporaryFile(mode="w+")
-        self.tmp.write("FT\n")
-
-    def check_gate(self, symbol, operator, custom_gate=None):
-        """Default g1 gate test with e2 as a complement argument."""
-        if custom_gate:
-            self.tmp.write(custom_gate)
-        else:
-            self.tmp.write("g1 := e1 %s ~e2\n" % symbol)
-        self.tmp.flush()
-        fault_tree = parse_input_file(self.tmp.name)
-        assert fault_tree is not None
-        assert len(fault_tree.gates) == 1
-        gate = fault_tree.gates[0]
-        assert gate.name == "g1"
-        assert gate.operator == operator
-        if not custom_gate:
-            assert "e1" in gate.event_arguments
-        assert "~e2" in gate.event_arguments
-        assert len(gate.complement_arguments) == 1
-        assert [x.name for x in gate.complement_arguments][0] == "e2"
-
-    def test_or(self):
-        """OR formula with complement arguments."""
-        self.check_gate("|", "or")
-
-    def test_xor(self):
-        """XOR formula with complement arguments."""
-        self.check_gate("^", "xor")
-
-    def test_imply(self):
-        """IMPLY formula with complement arguments."""
-        self.check_gate("=>", "imply")
-
-    def test_and(self):
-        """AND Formula with complement arguments."""
-        self.check_gate("&", "and")
-
-    def test_vote(self):
-        """Combination with complement arguments."""
-        self.check_gate("@", "atleast", "g1 := @(2, [e1, ~e2, e3])")
-
-    def test_null(self):
-        """NULL with a single complement argument."""
-        self.check_gate("", "null", "g1 := ~e2")
-
-    def test_not(self):
-        """NOT of a complement argument."""
-        self.check_gate("", "not", "g1 := ~(~e2)")
-
-    def test_cancellation(self):
-        """Supplies argument and its complement."""
-        self.check_gate("&", "and", "g1 := ~e2 & e2")
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    if custom_gate:
+        tmp.write(custom_gate)
+    else:
+        tmp.write("g1 := e1 %s ~e2\n" % symbol)
+    tmp.flush()
+    fault_tree = parse_input_file(tmp.name)
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 1
+    gate = fault_tree.gates[0]
+    assert gate.name == "g1"
+    assert gate.operator == operator
+    if not custom_gate:
+        assert "e1" in gate.event_arguments
+    assert "~e2" in gate.event_arguments
+    assert len(gate.complement_arguments) == 1
+    assert [x.name for x in gate.complement_arguments][0] == "e2"
 
 
-class NestedFormulaTestCase(TestCase):
+@pytest.mark.parametrize("formula", [
+    "e1 | e2 ^ e3", "e1 | e2 & e3", "e1 | @(2, [e2, e3, e4])", "e1 ^ e2 ^ e3",
+    "e1 ^ e2 & e3", "~~e1", "~e1~a", "e1 => e2 => e3", "e1 => e2 || e3",
+    "e1 <=> e2 <=> e3", "e1 <=> e2 || e3"
+])
+def test_nested_formula(formula):
     """Nested logical operator tests."""
-
-    def setUp(self):
-        """Launches a temporary file."""
-        self.tmp = NamedTemporaryFile(mode="w+")
-        self.tmp.write("FT\n")
-
-    def test_or_xor(self):
-        """Formula with OR and XOR operators."""
-        self.tmp.write("g1 := e1 | e2 ^ e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_or_and(self):
-        """Formula with OR and AND operators."""
-        self.tmp.write("g1 := e1 | e2 & e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_or_vote(self):
-        """Formula with OR and K/N operators."""
-        self.tmp.write("g1 := e1 | @(2, [e2, e3, e4])\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_xor_xor(self):
-        """Formula with XOR and XOR operators.
-
-        Note that this is a special case
-        because most analysis restricts XOR operator to two arguments,
-        so nested formula of XOR operators must be created.
-        """
-        self.tmp.write("g1 := e1 ^ e2 ^ e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_xor_and(self):
-        """Formula with XOR and AND operators."""
-        self.tmp.write("g1 := e1 ^ e2 & e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_not_not(self):
-        """Formula with NOT and NOT operators.
-
-        This is a special case. It is considered an error without parentheses.
-        """
-        self.tmp.write("g1 := ~~e1\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-        tmp = NamedTemporaryFile(mode="w+")
-        tmp.write("FT\n")
-        tmp.write("g1 := ~e1~a\n")
-        tmp.flush()
-        assert_raises(ParsingError, parse_input_file, tmp.name)
-
-    def test_imply_imply(self):
-        """Formula with IMPLY and IMPLY operators."""
-        self.tmp.write("g1 := e1 => e2 => e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_imply_or(self):
-        """Formula with IMPLY and OR operators."""
-        self.tmp.write("g1 := e1 => e2 || e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_iff_iff(self):
-        """Formula with IFF and IFF operators."""
-        self.tmp.write("g1 := e1 <=> e2 <=> e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
-
-    def test_iff_or(self):
-        """Formula with IFF and OR operators."""
-        self.tmp.write("g1 := e1 <=> e2 || e3\n")
-        self.tmp.flush()
-        assert_raises(ParsingError, parse_input_file, self.tmp.name)
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    tmp.write("g1 := %s\n" % formula)
+    tmp.flush()
+    with pytest.raises(ParsingError):
+        parse_input_file(tmp.name)
 
 
 def test_main():
