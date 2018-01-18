@@ -18,14 +18,14 @@ addons:
 install:
     - if [[ "${TRAVIS_PYTHON_VERSION}" == "2.7" ]]; then
         export RUN_COVERAGE=true;
-        pip install coverage codecov yapf;
+        pip install coverage codecov yapf pytest-cov;
       fi
-    - pip install nose lxml
+    - pip install pytest lxml
 
 script:
     - if [[ $RUN_COVERAGE == true ]]; then
-        nosetests --with-coverage test/ && codecov;
+        python -m pytest --cov=. --cov-config .coveragerc test/ && codecov;
         yapf -d *.py test/*.py;
       else
-        nosetests test/;
+        python -m pytest test/;
       fi
