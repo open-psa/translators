@@ -183,7 +183,7 @@ def test_nested_parentheses():
         "g1 := @(3, [a, b, c])",  # K = N
         "g1 := @(4, [a, b, c])"  # K > N
     ])
-def test_vote_gate_arguments(definition):
+def test_atleast_gate_arguments(definition):
     """K/N or Combination gate/operator should have its K < its N."""
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")

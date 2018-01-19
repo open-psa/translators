@@ -111,7 +111,7 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
 
     Attributes:
         operator: Logical operator of this formula.
-        k_num: Min number for the combination operator.
+        min_num: Min number for the combination operator.
         g_arguments: arguments that are gates.
         b_arguments: arguments that are basic events.
         h_arguments: arguments that are house events.
@@ -119,18 +119,18 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
         mark: Marking for various algorithms like toposort.
     """
 
-    def __init__(self, name, operator, k_num=None):
+    def __init__(self, name, operator, min_num=None):
         """Initializes a gate.
 
         Args:
             name: Identifier of the node.
             operator: Boolean operator of this formula.
-            k_num: Min number for the combination operator.
+            min_num: Min number for the combination operator.
         """
         super(Gate, self).__init__(name)
         self.mark = None
         self.operator = operator
-        self.k_num = k_num
+        self.min_num = min_num
         self.g_arguments = set()
         self.b_arguments = set()
         self.h_arguments = set()
@@ -197,7 +197,7 @@ class Gate(Event):  # pylint: disable=too-many-instance-attributes
             if gate.operator != "null":
                 mef_xml += "<" + gate.operator
                 if gate.operator == "atleast":
-                    mef_xml += " min=\"" + str(gate.k_num) + "\""
+                    mef_xml += " min=\"" + str(gate.min_num) + "\""
                 mef_xml += ">\n"
             mef_xml += args_to_xml("house-event", gate.h_arguments, gate)
             mef_xml += args_to_xml("basic-event", gate.b_arguments, gate)

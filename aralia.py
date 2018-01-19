@@ -83,15 +83,15 @@ class LateBindingGate(Gate):
         event_arguments: String names of arguments.
     """
 
-    def __init__(self, name, operator=None, k_num=None):
+    def __init__(self, name, operator=None, min_num=None):
         """Initializes a gate.
 
         Args:
             name: Identifier of the event.
             operator: Boolean operator of this formula.
-            k_num: Min number for the combination operator.
+            min_num: Min number for the combination operator.
         """
-        super(LateBindingGate, self).__init__(name, operator, k_num)
+        super(LateBindingGate, self).__init__(name, operator, min_num)
         self.event_arguments = []
 
     def num_arguments(self):
@@ -242,20 +242,20 @@ class LateBindingFaultTree(FaultTree):
         self.__house_events[name] = event
         self.house_events.append(event)
 
-    def add_gate(self, name, operator, arguments, k_num=None):
+    def add_gate(self, name, operator, arguments, min_num=None):
         """Creates and adds a new gate into the fault tree.
 
         Args:
             name: A name for the new gate.
             operator: A gate operator for the new gate.
             arguments: Collection of argument event names of the new gate.
-            k_num: K number is required for a combination type of a gate.
+            min_num: K number is required for a combination type of a gate.
 
         Raises:
             FaultTreeError: The given name already exists.
         """
         self.__check_redefinition(name)
-        gate = LateBindingGate(name, operator, k_num)
+        gate = LateBindingGate(name, operator, min_num)
         gate.event_arguments = arguments
         self.__gates[name] = gate
         self.gates.append(gate)
@@ -320,7 +320,7 @@ _RE_PAREN = re.compile(r"\(([^()]+)\)$")
 _RE_AND = re.compile(r"({0}(\s*&\s*{0}\s*)+)$".format(_LITERAL))
 _RE_OR = re.compile(r"({0}(\s*\|\s*{0}\s*)+)$".format(_LITERAL))
 _ARGS_LIST = r"\[(\s*{0}(\s*,\s*{0}\s*){{2,}})\]".format(_LITERAL)
-_RE_VOTE = re.compile(r"@\(\s*([2-9])\s*,\s*%s\s*\)\s*$" % _ARGS_LIST)
+_RE_ATLEAST = re.compile(r"@\(\s*([2-9])\s*,\s*%s\s*\)\s*$" % _ARGS_LIST)
 _RE_XOR = re.compile(r"({0}\s*\^\s*{0})$".format(_LITERAL))
 _RE_NOT = re.compile(r"~\(\s*(%s)\s*\)$" % _LITERAL)
 _RE_NULL = re.compile(r"(%s)$" % _LITERAL)
@@ -355,7 +355,7 @@ def get_formula(line):
         line: A string containing a Boolean equation.
 
     Returns:
-        A formula operator, arguments, and k_num.
+        A formula operator, arguments, and min_num.
 
     Raises:
         ParsingError: Parsing is unsuccessful.
@@ -367,7 +367,7 @@ def get_formula(line):
         line = _RE_PAREN.match(line).group(1).strip()
     arguments = None
     operator = None
-    k_num = None
+    min_num = None
     if _RE_OR.match(line):
         arguments = _RE_OR.match(line).group(1)
         arguments = get_arguments(arguments, "|")
@@ -380,10 +380,10 @@ def get_formula(line):
         arguments = _RE_AND.match(line).group(1)
         arguments = get_arguments(arguments, "&")
         operator = "and"
-    elif _RE_VOTE.match(line):
-        k_num, arguments = _RE_VOTE.match(line).group(1, 2)
+    elif _RE_ATLEAST.match(line):
+        min_num, arguments = _RE_ATLEAST.match(line).group(1, 2)
         arguments = get_arguments(arguments, ",")
-        if int(k_num) >= len(arguments):
+        if int(min_num) >= len(arguments):
             raise FaultTreeError(
                 "Invalid k/n for the combination formula:\n" + line)
         operator = "atleast"
@@ -405,7 +405,7 @@ def get_formula(line):
         operator = "iff"
     else:
         raise ParsingError("Cannot interpret the formula:\n" + line)
-    return operator, arguments, k_num
+    return operator, arguments, min_num
 
 
 def interpret_line(line, fault_tree):
@@ -425,8 +425,8 @@ def interpret_line(line, fault_tree):
         return
     if _RE_GATE.match(line):
         gate_name, formula_line = _RE_GATE.match(line).group("name", "formula")
-        operator, arguments, k_num = get_formula(formula_line)
-        fault_tree.add_gate(gate_name, operator, arguments, k_num)
+        operator, arguments, min_num = get_formula(formula_line)
+        fault_tree.add_gate(gate_name, operator, arguments, min_num)
     elif _RE_PROB.match(line):
         event_name, prob = _RE_PROB.match(line).group("name", "prob")
         fault_tree.add_basic_event(event_name, prob)
