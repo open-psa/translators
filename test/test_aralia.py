@@ -121,7 +121,7 @@ def test_no_ft_name():
     "g1 := g2 + e1", "g1 := g2 * e1", "g1 := -e1", "g1 := g2 / e1",
     "g1 = e1 & e2", "g1 : e1 & e2", "g1 := (3 == (e1 + e2 + e3))",
     "g1 := (1, [e1, e2, e3])", "g1 := (2, [])", "g1 := (2, [e1])",
-    "g1 := (2, [e1, e2])"
+    "g1 := (2, [e1, e2])", "g1 := (-1, [e1, e2, e3])"
 ])
 def test_illegal_format(definition):
     """Test Arithmetic operators."""
@@ -248,6 +248,22 @@ def test_iff_gate():
     assert fault_tree.gates[0].name == "g1"
     assert fault_tree.gates[0].event_arguments == ["a", "b"]
     assert fault_tree.gates[0].operator == "iff"
+
+
+def test_atleast_gate():
+    """Tests if ATLEAST type gates are recognized correctly."""
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    tmp.write("g1 := @(2, [e1, e2, e3, e4, e5])")
+    tmp.flush()
+    fault_tree = parse_input_file(tmp.name)
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 1
+    gate = fault_tree.gates[0]
+    assert gate.name == "g1"
+    assert gate.event_arguments == ["e1", "e2", "e3", "e4", "e5"]
+    assert gate.operator == "atleast"
+    assert gate.min_num == 2
 
 
 def test_cardinality_gate():
