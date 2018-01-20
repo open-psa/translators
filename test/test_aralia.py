@@ -35,7 +35,7 @@ def test_correct():
     """Tests the valid overall process."""
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("ValidFaultTree\n\n")
-    tmp.write("root := g1 | g2 | g3 | g4 | g7 | g9 | g10 | e1\n")
+    tmp.write("root := g1 | g2 | g3 | g4 | g7 | g9 | g10 | g11 | e1\n")
     tmp.write("g1 := e2 & g3 & g5\n")
     tmp.write("g2 := h1 & g6\n")
     tmp.write("g3 := (g6 ^ e2)\n")
@@ -46,6 +46,7 @@ def test_correct():
     tmp.write("g8 := ~e2 & ~e3\n\n")
     tmp.write("g9 := (g8 => g2)\n")
     tmp.write("g10 := e1 <=> e2\n")
+    tmp.write("g11 := #(2, 4, [e1, e2, e3, e4, g5])\n")
     tmp.write("p(e1) = 0.1\n")
     tmp.write("p(e2) = 0.2\n")
     tmp.write("p(e3) = 0.3\n")
@@ -54,7 +55,7 @@ def test_correct():
     tmp.flush()
     fault_tree = parse_input_file(tmp.name)
     assert fault_tree is not None
-    assert len(fault_tree.gates) == 11
+    assert len(fault_tree.gates) == 12
     assert len(fault_tree.basic_events) == 3
     assert len(fault_tree.house_events) == 2
     assert len(fault_tree.undefined_events()) == 1
@@ -247,6 +248,23 @@ def test_iff_gate():
     assert fault_tree.gates[0].name == "g1"
     assert fault_tree.gates[0].event_arguments == ["a", "b"]
     assert fault_tree.gates[0].operator == "iff"
+
+
+def test_cardinality_gate():
+    """Tests if CARDINALITY type gates are recognized correctly."""
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    tmp.write("g1 := #(2, 4, [e1, e2, e3, e4, e5])")
+    tmp.flush()
+    fault_tree = parse_input_file(tmp.name)
+    assert fault_tree is not None
+    assert len(fault_tree.gates) == 1
+    gate = fault_tree.gates[0]
+    assert gate.name == "g1"
+    assert gate.event_arguments == ["e1", "e2", "e3", "e4", "e5"]
+    assert gate.operator == "cardinality"
+    assert gate.min_num == 2
+    assert gate.max_num == 4
 
 
 def test_no_top_event():

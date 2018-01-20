@@ -27,6 +27,7 @@ XOR gate:                          gate_name := (arg1 ^ arg2)
 NULL gate:                         gate_name := arg
 IMPLY gate:                        gate_name := (arg1 => arg2)
 IFF gate:                          gate_name := (arg1 <=> arg2)
+CARDINALITY gate:                  gate_name := #(l, h, [arg1, arg2, ...])
 Probability of a basic event:      p(event_name) = probability
 Boolean state of a house event:    s(event_name) = state
 
@@ -44,7 +45,7 @@ Some requirements and additions to the extended Aralia format:
    unless otherwise specified by the user.
 7. Repeated arguments are considered an error.
 8. The script is flexible with whitespace characters in the input file.
-9. Parentheses are optional for logical operators except for ATLEAST.
+9. Parentheses are optional except for ATLEAST and CARDINALITY.
 """
 
 from __future__ import print_function, absolute_import
@@ -83,15 +84,16 @@ class LateBindingGate(Gate):
         event_arguments: String names of arguments.
     """
 
-    def __init__(self, name, operator=None, min_num=None):
+    def __init__(self, name, operator=None, min_num=None, max_num=None):
         """Initializes a gate.
 
         Args:
             name: Identifier of the event.
             operator: Boolean operator of this formula.
             min_num: Min number for the combination operator.
+            max_num: Max number for the cardinality operator.
         """
-        super(LateBindingGate, self).__init__(name, operator, min_num)
+        super(LateBindingGate, self).__init__(name, operator, min_num, max_num)
         self.event_arguments = []
 
     def num_arguments(self):
@@ -242,7 +244,7 @@ class LateBindingFaultTree(FaultTree):
         self.__house_events[name] = event
         self.house_events.append(event)
 
-    def add_gate(self, name, operator, arguments, min_num=None):
+    def add_gate(self, name, operator, arguments, min_num=None, max_num=None):
         """Creates and adds a new gate into the fault tree.
 
         Args:
@@ -250,12 +252,13 @@ class LateBindingFaultTree(FaultTree):
             operator: A gate operator for the new gate.
             arguments: Collection of argument event names of the new gate.
             min_num: K number is required for a combination type of a gate.
+            max_num: max number is required for a cardinality type of a gate.
 
         Raises:
             FaultTreeError: The given name already exists.
         """
         self.__check_redefinition(name)
-        gate = LateBindingGate(name, operator, min_num)
+        gate = LateBindingGate(name, operator, min_num, max_num)
         gate.event_arguments = arguments
         self.__gates[name] = gate
         self.gates.append(gate)
@@ -321,6 +324,8 @@ _RE_AND = re.compile(r"({0}(\s*&\s*{0}\s*)+)$".format(_LITERAL))
 _RE_OR = re.compile(r"({0}(\s*\|\s*{0}\s*)+)$".format(_LITERAL))
 _ARGS_LIST = r"\[(\s*{0}(\s*,\s*{0}\s*){{2,}})\]".format(_LITERAL)
 _RE_ATLEAST = re.compile(r"@\(\s*([2-9])\s*,\s*%s\s*\)\s*$" % _ARGS_LIST)
+_RE_CARDINALITY = re.compile(
+    r"#\(\s*(?P<min>\d)\s*,\s*(?P<max>\d)\s*,\s*%s\s*\)\s*$" % _ARGS_LIST)
 _RE_XOR = re.compile(r"({0}\s*\^\s*{0})$".format(_LITERAL))
 _RE_NOT = re.compile(r"~\(\s*(%s)\s*\)$" % _LITERAL)
 _RE_NULL = re.compile(r"(%s)$" % _LITERAL)
@@ -355,7 +360,7 @@ def get_formula(line):
         line: A string containing a Boolean equation.
 
     Returns:
-        A formula operator, arguments, and min_num.
+        A formula operator, arguments, min_num, max_num.
 
     Raises:
         ParsingError: Parsing is unsuccessful.
@@ -365,9 +370,11 @@ def get_formula(line):
     line = line.strip()
     if _RE_PAREN.match(line):
         line = _RE_PAREN.match(line).group(1).strip()
+    # TODO: refactor None fields
     arguments = None
     operator = None
     min_num = None
+    max_num = None
     if _RE_OR.match(line):
         arguments = _RE_OR.match(line).group(1)
         arguments = get_arguments(arguments, "|")
@@ -383,7 +390,8 @@ def get_formula(line):
     elif _RE_ATLEAST.match(line):
         min_num, arguments = _RE_ATLEAST.match(line).group(1, 2)
         arguments = get_arguments(arguments, ",")
-        if int(min_num) >= len(arguments):
+        min_num = int(min_num)
+        if min_num >= len(arguments):
             raise FaultTreeError(
                 "Invalid k/n for the combination formula:\n" + line)
         operator = "atleast"
@@ -403,9 +411,16 @@ def get_formula(line):
         arguments = _RE_IFF.match(line).group(1)
         arguments = get_arguments(arguments, "<=>")
         operator = "iff"
+    elif _RE_CARDINALITY.match(line):
+        min_num, max_num, arguments = _RE_CARDINALITY.match(line).group(1, 2, 3)
+        arguments = get_arguments(arguments, ",")
+        min_num, max_num = int(min_num), int(max_num)
+        # TODO: min must be less or equal to max
+        # TODO: max must be less or equal to the number of args
+        operator = "cardinality"
     else:
         raise ParsingError("Cannot interpret the formula:\n" + line)
-    return operator, arguments, min_num
+    return operator, arguments, min_num, max_num
 
 
 def interpret_line(line, fault_tree):
@@ -425,8 +440,7 @@ def interpret_line(line, fault_tree):
         return
     if _RE_GATE.match(line):
         gate_name, formula_line = _RE_GATE.match(line).group("name", "formula")
-        operator, arguments, min_num = get_formula(formula_line)
-        fault_tree.add_gate(gate_name, operator, arguments, min_num)
+        fault_tree.add_gate(gate_name, *get_formula(formula_line))
     elif _RE_PROB.match(line):
         event_name, prob = _RE_PROB.match(line).group("name", "prob")
         fault_tree.add_basic_event(event_name, prob)
