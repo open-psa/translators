@@ -120,8 +120,9 @@ def test_no_ft_name():
 @pytest.mark.parametrize("definition", [
     "g1 := g2 + e1", "g1 := g2 * e1", "g1 := -e1", "g1 := g2 / e1",
     "g1 = e1 & e2", "g1 : e1 & e2", "g1 := (3 == (e1 + e2 + e3))",
-    "g1 := (1, [e1, e2, e3])", "g1 := (2, [])", "g1 := (2, [e1])",
-    "g1 := (2, [e1, e2])", "g1 := (-1, [e1, e2, e3])"
+    "g1 := @(1, [e1, e2, e3])", "g1 := @(2, [])", "g1 := @(2, [e1])",
+    "g1 := @(2, [e1, e2])", "g1 := @(-1, [e1, e2, e3])",
+    "g1 := #(2, [e1, e2, e3])"
 ])
 def test_illegal_format(definition):
     """Test Arithmetic operators."""
@@ -189,6 +190,22 @@ def test_atleast_gate_arguments(definition):
     tmp = NamedTemporaryFile(mode="w+")
     tmp.write("FT\n")
     tmp.write("%s\n" % definition)  # K = N
+    tmp.flush()
+    with pytest.raises(FaultTreeError):
+        parse_input_file(tmp.name)
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        "g1 := #(2, 1, [a, b, c])",  # l > h
+        "g1 := #(2, 4, [a, b, c])"  # h > N
+    ])
+def test_cardinality_gate_arguments(definition):
+    """Invalid CARDINALITY l/h/N."""
+    tmp = NamedTemporaryFile(mode="w+")
+    tmp.write("FT\n")
+    tmp.write("%s\n" % definition)
     tmp.flush()
     with pytest.raises(FaultTreeError):
         parse_input_file(tmp.name)
@@ -369,6 +386,7 @@ def test_detached_gates():
     ("=>", "imply", None),
     ("&", "and", None),
     ("@", "atleast", "g1 := @(2, [e1, ~e2, e3])"),
+    ("#", "cardinality", "g1 := #(1, 2, [e1, ~e2, e3])"),
     ("", "null", "g1 := ~e2"),
     ("", "not", "g1 := ~(~e2)"),
     ("&", "and", "g1 := ~e2 & e2"),

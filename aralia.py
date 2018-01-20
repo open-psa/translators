@@ -403,8 +403,9 @@ def get_formula(line):
         min_num, max_num, arguments = _RE_CARDINALITY.match(line).group(1, 2, 3)
         arguments = get_arguments(arguments, ",")
         min_num, max_num = int(min_num), int(max_num)
-        # TODO: min must be less or equal to max
-        # TODO: max must be less or equal to the number of args
+        if min_num > max_num or max_num > len(arguments):
+            raise FaultTreeError(
+                "Invalid l/h for the cardinality formula:\n" + line)
         return "cardinality", arguments, min_num, max_num
 
     raise ParsingError("Cannot interpret the formula:\n" + line)
