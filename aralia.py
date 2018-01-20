@@ -370,23 +370,15 @@ def get_formula(line):
     line = line.strip()
     if _RE_PAREN.match(line):
         line = _RE_PAREN.match(line).group(1).strip()
-    # TODO: refactor None fields
-    arguments = None
-    operator = None
-    min_num = None
-    max_num = None
     if _RE_OR.match(line):
         arguments = _RE_OR.match(line).group(1)
-        arguments = get_arguments(arguments, "|")
-        operator = "or"
+        return "or", get_arguments(arguments, "|")
     elif _RE_XOR.match(line):
         arguments = _RE_XOR.match(line).group(1)
-        arguments = get_arguments(arguments, "^")
-        operator = "xor"
+        return "xor", get_arguments(arguments, "^")
     elif _RE_AND.match(line):
         arguments = _RE_AND.match(line).group(1)
-        arguments = get_arguments(arguments, "&")
-        operator = "and"
+        return "and", get_arguments(arguments, "&")
     elif _RE_ATLEAST.match(line):
         min_num, arguments = _RE_ATLEAST.match(line).group(1, 2)
         arguments = get_arguments(arguments, ",")
@@ -394,33 +386,28 @@ def get_formula(line):
         if min_num >= len(arguments):
             raise FaultTreeError(
                 "Invalid k/n for the combination formula:\n" + line)
-        operator = "atleast"
+        return "atleast", arguments, min_num
     elif _RE_NOT.match(line):
         arguments = _RE_NOT.match(line).group(1)
-        arguments = [arguments.strip()]
-        operator = "not"
+        return "not", [arguments.strip()]
     elif _RE_NULL.match(line):
         arguments = _RE_NULL.match(line).group(1)
-        arguments = [arguments.strip()]
-        operator = "null"  # pass-through
+        return "null", [arguments.strip()]
     elif _RE_IMPLY.match(line):
         arguments = _RE_IMPLY.match(line).group(1)
-        arguments = get_arguments(arguments, "=>")
-        operator = "imply"
+        return "imply", get_arguments(arguments, "=>")
     elif _RE_IFF.match(line):
         arguments = _RE_IFF.match(line).group(1)
-        arguments = get_arguments(arguments, "<=>")
-        operator = "iff"
+        return "iff", get_arguments(arguments, "<=>")
     elif _RE_CARDINALITY.match(line):
         min_num, max_num, arguments = _RE_CARDINALITY.match(line).group(1, 2, 3)
         arguments = get_arguments(arguments, ",")
         min_num, max_num = int(min_num), int(max_num)
         # TODO: min must be less or equal to max
         # TODO: max must be less or equal to the number of args
-        operator = "cardinality"
-    else:
-        raise ParsingError("Cannot interpret the formula:\n" + line)
-    return operator, arguments, min_num, max_num
+        return "cardinality", arguments, min_num, max_num
+
+    raise ParsingError("Cannot interpret the formula:\n" + line)
 
 
 def interpret_line(line, fault_tree):
